@@ -29,7 +29,7 @@ def init_net1(net1, init_type='normal', init_gain=0.02, gpu_ids=[], debug=False,
         # if not amp:
         # net = torch.nn.DataParallel(net, gpu_ids)  # multi-GPUs for non-AMP training
     if initialize_weights:
-        init_weights(net1, init_type, init_gain=init_gain)
+        init_weights1(net1, init_type, init_gain=init_gain)
     return net1    
 
 
@@ -83,7 +83,7 @@ def get_scheduler(optimizer, opt):
     return scheduler
 
 
-def init_weights(net, init_type='normal', init_gain=0.02):
+def init_weights1(net, init_type='normal', init_gain=0.02):
     """Initialize network weights.
 
     Parameters:
