@@ -43,7 +43,18 @@ class BaseModel(ABC):
         self.optimizers = nn.ModuleList()
         self.image_paths = []
         self.metric = 0  # used for learning rate policy 'plateau'
+    
+    @staticmethod
+    def dict_grad_hook_factory(add_func=lambda x: x):
+        saved_dict = dict()
 
+        def hook_gen(name):
+            def grad_hook(grad):
+                saved_vals = add_func(grad)
+                saved_dict[name] = saved_vals
+            return grad_hook
+        return hook_gen, saved_dict
+    
     @staticmethod
     def modify_commandline_options(parser, is_train):
         """Add new model-specific options, and rewrite default values for existing options.
