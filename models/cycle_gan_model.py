@@ -35,6 +35,9 @@ class CycleGANModel(BaseModel):
                                         opt.ngf, opt.which_model_netG, opt.norm, not opt.no_dropout, opt.init_type, self.gpu_ids)
         self.netG_B = networks.define_G(opt.output_nc, opt.input_nc,
                                         opt.ngf, opt.which_model_netG, opt.norm, not opt.no_dropout, opt.init_type, self.gpu_ids)
+        
+        self.netF = networks.define_F(opt.input_nc, opt.netF, opt.norm,not opt.no_dropout, opt.init_type, opt.init_gain, self.gpu_ids,opt)
+        
 
         if self.isTrain:
             use_sigmoid = opt.no_lsgan
@@ -50,6 +53,9 @@ class CycleGANModel(BaseModel):
             self.fake_B_pool = ImagePool(opt.pool_size)
             # define loss functions
             self.criterionGAN = networks.GANLoss(use_lsgan=not opt.no_lsgan).to(self.device)
+            self.criterionNCE = []
+            for nce_layer in self.opt.nce_layers:
+                self.criterionNCE.append(PatchNCELoss(opt).to(self.device))
             self.criterionCycle = torch.nn.L1Loss()
             self.criterionIdt = torch.nn.L1Loss()
             # initialize optimizers
@@ -60,6 +66,25 @@ class CycleGANModel(BaseModel):
             self.optimizers = []
             self.optimizers.append(self.optimizer_G)
             self.optimizers.append(self.optimizer_D)
+            
+   def data_dependent_initialize(self, data):
+        """
+        The feature network netF is defined in terms of the shape of the intermediate, extracted
+        features of the encoder portion of netG. Because of this, the weights of netF are
+        initialized at the first feedforward pass with some input images.
+        Please also see PatchSampleF.create_mlp(), which is called at the first forward() call.
+        """
+        bs_per_gpu = data["A"].size(0) // max(len(self.opt.gpu_ids), 1)
+        self.set_input(data)
+        self.real_A = self.real_A[:bs_per_gpu]
+        self.real_B = self.real_B[:bs_per_gpu]
+        self.forward()                     # compute fake images: G(A)
+        if self.opt.isTrain:
+            self.backward_D_basic( netD, real, fake).backward()                  # calculate gradients for D
+            self.backward_G.backward()                   # calculate graidents for G
+            if self.opt.lambda_NCE > 0.0:
+                self.optimizer_F = torch.optim.Adam(self.netF.parameters(), lr=self.opt.lr, betas=(self.opt.beta1, self.opt.beta2))
+                self.optimizers.append(self.optimizer_F)         
 
     def set_input(self, input):
         AtoB = self.opt.which_direction == 'AtoB'
@@ -68,11 +93,21 @@ class CycleGANModel(BaseModel):
         self.image_paths = input['A_paths' if AtoB else 'B_paths']
 
     def forward(self):
-        self.fake_B = self.netG_A(self.real_A)
-        self.rec_A = self.netG_B(self.fake_B)
+        #self.fake_B = self.netG_A(self.real_A)
+        #self.rec_A = self.netG_B(self.fake_B)
+        self.fake_B = self.netG_A(self.real_A)  # G_A(A)
+        self.fake_B1 = torch.cat((self.fake_B, self.real_A), dim=0) if self.opt.nce_idt and self.opt.isTrain else self.real_A
+        self.rec_A = self.netG_B(self.fake_B1)   # G_B(G_A(A))
+        self.rec_A1 = self.rec_A[:self.real_A.size(0)]
 
-        self.fake_A = self.netG_B(self.real_B)
-        self.rec_B = self.netG_A(self.fake_A)
+        #self.fake_A = self.netG_B(self.real_B)
+        #self.rec_B = self.netG_A(self.fake_A)
+        
+        
+        self.fake_A = self.netG_B(self.real_B)  # G_B(B)
+        self.fake_A1 = torch.cat((self.fake_A, self.real_B), dim=0) if self.opt.nce_idt and self.opt.isTrain else self.real_B
+        self.rec_B = self.netG_A(self.fake_A1)   # G_A(G_B(B))
+        self.rec_B1 = self.rec_B[:self.real_B.size(0)]
 
     def backward_D_basic(self, netD, real, fake):
         # Real
@@ -96,15 +131,16 @@ class CycleGANModel(BaseModel):
         self.loss_D_B = self.backward_D_basic(self.netD_B, self.real_A, fake_A)
 
     def backward_G(self):
+         """Calculate the loss for generators G_A and G_B"""
         lambda_idt = self.opt.lambda_identity
         lambda_A = self.opt.lambda_A
         lambda_B = self.opt.lambda_B
         # Identity loss
         if lambda_idt > 0:
-            # G_A should be identity if real_B is fed.
+            # G_A should be identity if real_B is fed: ||G_A(B) - B||
             self.idt_A = self.netG_A(self.real_B)
             self.loss_idt_A = self.criterionIdt(self.idt_A, self.real_B) * lambda_B * lambda_idt
-            # G_B should be identity if real_A is fed.
+            # G_B should be identity if real_A is fed: ||G_B(A) - A||
             self.idt_B = self.netG_B(self.real_A)
             self.loss_idt_B = self.criterionIdt(self.idt_B, self.real_A) * lambda_A * lambda_idt
         else:
@@ -113,26 +149,56 @@ class CycleGANModel(BaseModel):
 
         # GAN loss D_A(G_A(A))
         self.loss_G_A = self.criterionGAN(self.netD_A(self.fake_B), True)
-
+        if self.opt.lambda_NCE > 0.0:
+            self.loss_NCE = self.calculate_NCE_loss(self.real_A, self.fake_B)
+        else:
+            self.loss_NCE, self.loss_NCE_bd = 0.0, 0.0
+            
+        if self.opt.nce_idt and self.opt.lambda_NCE > 0.0:
+            self.loss_NCE_Y = self.calculate_NCE_loss(self.real_B, self.idt_B)
+            loss_NCE_both = (self.loss_NCE + self.loss_NCE_Y) * 0.5
+        else:
+            loss_NCE_both = self.loss_NCE
+            
         # GAN loss D_B(G_B(B))
         self.loss_G_B = self.criterionGAN(self.netD_B(self.fake_A), True)
-
-        # Forward cycle loss
+        # Forward cycle loss || G_B(G_A(A)) - A||
         self.loss_cycle_A = self.criterionCycle(self.rec_A, self.real_A) * lambda_A
-
-        # Backward cycle loss
+        # Backward cycle loss || G_A(G_B(B)) - B||
         self.loss_cycle_B = self.criterionCycle(self.rec_B, self.real_B) * lambda_B
-        # combined loss
-        self.loss_G = self.loss_G_A + self.loss_G_B + self.loss_cycle_A + self.loss_cycle_B + self.loss_idt_A + self.loss_idt_B
+        # combined loss and calculate gradients
+        self.loss_G = self.loss_G_A + self.loss_G_B + self.loss_cycle_A + self.loss_cycle_B + self.loss_idt_A + self.loss_idt_B + loss_NCE_both
         self.loss_G.backward()
+        
+    def calculate_NCE_loss(self, src, tgt):
+        n_layers = len(self.nce_layers)
+        feat_q = self.netG_B(tgt, self.nce_layers, encode_only=True)
+
+        if self.opt.flip_equivariance and self.flipped_for_equivariance:
+            feat_q = [torch.flip(fq, [3]) for fq in feat_q]
+
+        feat_k = self.netG(src, self.nce_layers, encode_only=True)
+        feat_k_pool, sample_ids = self.netF(feat_k, self.opt.num_patches, None)
+        feat_q_pool, _ = self.netF(feat_q, self.opt.num_patches, sample_ids)
+
+        total_nce_loss = 0.0
+        for f_q, f_k, crit, nce_layer in zip(feat_q_pool, feat_k_pool, self.criterionNCE, self.nce_layers):
+            loss = crit(f_q, f_k) * self.opt.lambda_NCE
+            total_nce_loss += loss.mean()
+
+        return total_nce_loss / n_layers    
 
     def optimize_parameters(self):
         # forward
         self.forward()
         # G_A and G_B
         self.optimizer_G.zero_grad()
+        if self.opt.netF == 'mlp_sample':
+            self.optimizer_F.zero_grad() 
         self.backward_G()
         self.optimizer_G.step()
+        if self.opt.netF == 'mlp_sample':
+            self.optimizer_F.step()
         # D_A and D_B
         self.optimizer_D.zero_grad()
         self.backward_D_A()
