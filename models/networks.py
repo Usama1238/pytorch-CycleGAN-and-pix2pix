@@ -114,7 +114,7 @@ def init_weights1(net, init_type='normal', init_gain=0.02,debug=False):
             init.constant_(m.bias.data, 0.0)
 
     print('initialize network with %s' % init_type)
-    net.apply(init_func)  # apply the initialization function <init_func>
+    net1.apply(init_func)  # apply the initialization function <init_func>
  
 def init_weights(net1, init_type='normal', init_gain=0.02):
     """Initialize network weights.
@@ -127,7 +127,7 @@ def init_weights(net1, init_type='normal', init_gain=0.02):
     We use 'normal' in the original pix2pix and CycleGAN paper. But xavier and kaiming might
     work better for some applications. Feel free to try yourself.
     """
-    def init_func1(m):  # define the initialization function
+    def init_func(m):  # define the initialization function
         classname = m.__class__.__name__
         if hasattr(m, 'weight') and (classname.find('Conv') != -1 or classname.find('Linear') != -1):
             if init_type == 'normal':
@@ -147,7 +147,7 @@ def init_weights(net1, init_type='normal', init_gain=0.02):
             init.constant_(m.bias.data, 0.0)
 
     print('initialize network with %s' % init_type)
-    net1.apply(init_func1)  # apply the initialization function <init_func>
+    net.apply(init_func)  # apply the initialization function <init_func>
 
 
 
