@@ -279,6 +279,15 @@ class Normalize(nn.Module):
         norm = x.pow(self.power).sum(1, keepdim=True).pow(1. / self.power)
         out = x.div(norm + 1e-7)
         return out
+class PoolingF(nn.Module):
+    def __init__(self):
+        super(PoolingF, self).__init__()
+        model = [nn.AdaptiveMaxPool2d(1)]
+        self.model = nn.Sequential(*model)
+        self.l2norm = Normalize(2)
+
+    def forward(self, x):
+        return self.l2norm(self.model(x))   
 
 class PatchSampleF(nn.Module):
     def __init__(self, use_mlp=False, init_type='normal', init_gain=0.02, nc=256, gpu_ids=[]):
