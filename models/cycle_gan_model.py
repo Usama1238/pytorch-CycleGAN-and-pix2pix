@@ -232,7 +232,7 @@ class CycleGANModel(BaseModel):
         self.loss_G = self.loss_G_A + self.loss_G_B + self.loss_cycle_A + self.loss_cycle_B + self.loss_idt_A + self.loss_idt_B + loss_NCE_both
         self.loss_G.backward()
         
-   def calculate_NCE_loss(self, src, tgt):
+    def calculate_NCE_loss(self, src, tgt):
         n_layers = len(self.nce_layers)
         feat_q = self.netG_B(tgt, self.nce_layers, encode_only=True)
 
