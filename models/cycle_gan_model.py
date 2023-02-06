@@ -100,6 +100,7 @@ class CycleGANModel(BaseModel):
             # define loss functions
             self.criterionGAN = networks.GANLoss(opt.gan_mode).to(self.device)  # define GAN loss.
             self.criterionNCE = []
+            self.optimizers = []
             for nce_layer in self.opt.nce_layers:
                 self.criterionNCE.append(PatchNCELoss(opt).to(self.device))
             self.criterionCycle = torch.nn.L1Loss()
