@@ -25,7 +25,7 @@ def init_net1(net1, init_type='normal', init_gain=0.02, gpu_ids=[], debug=False,
     """
     if length_hint(gpu_ids) > 0:
         assert(torch.cuda.is_available())
-        net.to(gpu_ids[0])
+        net1.to(gpu_ids[0])
         # if not amp:
         # net = torch.nn.DataParallel(net, gpu_ids)  # multi-GPUs for non-AMP training
     if initialize_weights:
