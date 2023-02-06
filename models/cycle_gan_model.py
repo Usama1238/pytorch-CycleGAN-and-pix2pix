@@ -264,11 +264,11 @@ class CycleGANModel(BaseModel):
         # G_A and G_B
         self.set_requires_grad([self.netD_A, self.netD_B], False)  # Ds require no gradients when optimizing Gs
         self.optimizer_G.zero_grad()  # set G_A and G_B's gradients to zero
-        if self.opt.netF == 'global_pool':
+        if self.opt.netF == 'mlp_sample':
             self.optimizer_F.zero_grad()  
         self.backward_G()             # calculate gradients for G_A and G_B
         self.optimizer_G.step()       # update G_A and G_B's weights
-        if self.opt.netF == 'global_pool':
+        if self.opt.netF == 'mlp_sample':
             self.optimizer_F.step()
         # D_A and D_B
         self.set_requires_grad([self.netD_A, self.netD_B], True)
