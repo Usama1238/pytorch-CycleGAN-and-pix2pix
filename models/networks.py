@@ -14,6 +14,23 @@ from operator import length_hint
 class Identity(nn.Module):
     def forward(self, x):
         return x
+def init_net1(net, init_type='normal', init_gain=0.02, gpu_ids=[], debug=False, initialize_weights=True):
+    """Initialize a network: 1. register CPU/GPU device (with multi-GPU support); 2. initialize the network weights
+    Parameters:
+        net (network)      -- the network to be initialized
+        init_type (str)    -- the name of an initialization method: normal | xavier | kaiming | orthogonal
+        gain (float)       -- scaling factor for normal, xavier and orthogonal.
+        gpu_ids (int list) -- which GPUs the network runs on: e.g., 0,1,2
+    Return an initialized network.
+    """
+    if len(gpu_ids) > 0:
+        assert(torch.cuda.is_available())
+        net.to(gpu_ids[0])
+        # if not amp:
+        # net = torch.nn.DataParallel(net, gpu_ids)  # multi-GPUs for non-AMP training
+    if initialize_weights:
+        init_weights(net, init_type, init_gain=init_gain, debug=debug)
+    return net    
 
 
 def get_norm_layer(norm_type='instance'):
@@ -248,7 +265,7 @@ class PatchSampleF(nn.Module):
             if len(self.gpu_ids) > 0:
                 mlp.cuda()
             setattr(self, 'mlp_%d' % mlp_id, mlp)
-        init_net(self, self.init_type, self.init_gain, self.gpu_ids)
+        init_net1(self, self.init_type, self.init_gain, self.gpu_ids)
         self.mlp_init = True
 
     def forward(self, feats, num_patches=64, patch_ids=None):
