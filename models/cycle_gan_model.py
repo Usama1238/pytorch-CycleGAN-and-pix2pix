@@ -84,7 +84,7 @@ class CycleGANModel(BaseModel):
                                         not opt.no_dropout, opt.init_type, opt.init_gain, self.gpu_ids)
         self.netG_B = networks.define_G(opt.output_nc, opt.input_nc, opt.ngf, opt.netG, opt.norm,
                                         not opt.no_dropout, opt.init_type, opt.init_gain, self.gpu_ids)
-        self.netF = networks.define_F(opt.input_nc, opt.netF, opt.norm,not opt.no_dropout, opt.init_type, opt.init_gain, self.gpu_ids,opt)
+        self.netF = print(networks.define_F(opt.input_nc, opt.netF, opt.norm,not opt.no_dropout, opt.init_type, opt.init_gain, self.gpu_ids,opt))
 
         if self.isTrain:  # define discriminators
             self.netD_A = networks.define_D(opt.output_nc, opt.ndf, opt.netD,
@@ -109,7 +109,7 @@ class CycleGANModel(BaseModel):
             self.optimizer_G = torch.optim.Adam(itertools.chain(self.netG_A.parameters(), self.netG_B.parameters()), lr=opt.lr, betas=(opt.beta1, 0.999))
             self.optimizer_D = print(torch.optim.Adam(itertools.chain(self.netD_A.parameters(), self.netD_B.parameters()), lr=opt.lr, betas=(opt.beta1, 0.999)))
             if self.opt.lambda_NCE > 0.0:
-                self.optimizer_F = print(torch.optim.Adam(self.netF.parameters(), lr=self.opt.lr, betas=(self.opt.beta1, 0.999)))
+                self.optimizer_F = torch.optim.Adam(self.netF.parameters(), lr=self.opt.lr, betas=(self.opt.beta1, 0.999))
                 self.optimizers.append(self.optimizer_F)   
             self.optimizers.append(self.optimizer_G)
             self.optimizers.append(self.optimizer_D)
