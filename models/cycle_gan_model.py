@@ -111,7 +111,7 @@ class PatchSampleF(nn.Module):
             if len(self.gpu_ids) > 0:
                 mlp.cuda()
             setattr(self, 'mlp_%d' % mlp_id, mlp)
-        networks.init_net(self, self.init_type, self.init_gain, self.gpu_ids)
+        print(networks.init_net(self, self.init_type, self.init_gain, self.gpu_ids))
         self.mlp_init = True
 
     def forward(self, feats, num_patches=64, patch_ids=None):
