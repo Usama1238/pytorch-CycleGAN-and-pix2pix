@@ -22,7 +22,7 @@ def define_F(input_nc, netF, norm='batch', use_dropout=False, init_type='normal'
         net = StridedConvF(init_type=init_type, init_gain=init_gain, gpu_ids=gpu_ids)
     else:
         raise NotImplementedError('projection model name [%s] is not recognized' % netF)
-    return init_net(net, init_type, init_gain, gpu_ids)
+    return networks.init_net(net, init_type, init_gain, gpu_ids)
 
 class Normalize(nn.Module):
 
@@ -55,7 +55,7 @@ class PatchSampleF(nn.Module):
             if len(self.gpu_ids) > 0:
                 mlp.cuda()
             setattr(self, 'mlp_%d' % mlp_id, mlp)
-        init_net(self, self.init_type, self.init_gain, self.gpu_ids)
+        networks.init_net(self, self.init_type, self.init_gain, self.gpu_ids)
         self.mlp_init = True
 
     def forward(self, feats, num_patches=64, patch_ids=None):
