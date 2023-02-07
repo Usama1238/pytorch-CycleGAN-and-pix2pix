@@ -46,12 +46,7 @@ class CycleGANModel(BaseModel):
             parser.add_argument('--lambda_B', type=float, default=10.0, help='weight for cycle loss (B -> A -> B)')
             parser.add_argument('--lambda_identity', type=float, default=0.5, help='use identity mapping. Setting lambda_identity other than 0 has an effect of scaling the weight of the identity mapping loss. For example, if the weight of the identity loss should be 10 times smaller than the weight of the reconstruction loss, please set lambda_identity = 0.1')
             parser.add_argument('--lambda_NCE', type=float, default=1.0, help='weight for NCE loss: NCE(G(X), X)')
-            parser.add_argument('--netF', type=str, default='mlp_sample', choices=['sample', 'reshape', 'mlp_sample'], help='how to downsample the feature map')
-            parser.add_argument('--netF_nc', type=int, default=256)
-            parser.add_argument('--nce_T', type=float, default=0.07, help='temperature for NCE loss')
-            parser.add_argument('--num_patches', type=int, default=256, help='number of patches per layer')
-            parser.add_argument('--nce_layers', type=str, default='0,4,8,12,16', help='compute NCE loss on which layers')   
-            parser.add_argument('--nce_idt',nargs='?', const=True, default=False, help='use NCE loss for identity mapping: NCE(G(Y), Y))')
+           
         return parser
 
     def __init__(self, opt):
