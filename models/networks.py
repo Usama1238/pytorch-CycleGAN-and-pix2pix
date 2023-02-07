@@ -219,7 +219,7 @@ def define_F(input_nc, netF, norm='batch', use_dropout=False, init_type='normal'
     elif netF == 'sample':
         net = PatchSampleF(use_mlp=False, init_type=init_type, init_gain=init_gain, gpu_ids=gpu_ids, nc=opt.netF_nc)
     elif netF == 'mlp_sample':
-        net1 = PatchSampleF(use_mlp=True, init_type=init_type, init_gain=init_gain, gpu_ids=gpu_ids, nc=256)
+        net1 = PatchSampleF(use_mlp=True, init_type=init_type, init_gain=init_gain, gpu_ids=gpu_ids, nc=opt.netF_nc)
     elif netF == 'strided_conv':
         net = StridedConvF(init_type=init_type, init_gain=init_gain, gpu_ids=gpu_ids)
     else:
