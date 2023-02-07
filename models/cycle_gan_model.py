@@ -398,7 +398,7 @@ class CycleGANModel(BaseModel):
         self.backward_D_B()      # calculate graidents for D_B
         self.optimizer_D.step()  # update D_A and D_B's weights
     
-   def calculate_NCE_loss(self, src, tgt):
+    def calculate_NCE_loss(self, src, tgt):
         n_layers = len(self.nce_layers)
         feat_q = self.netG_B(tgt, self.nce_layers, encode_only=True)
 
