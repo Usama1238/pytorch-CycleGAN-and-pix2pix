@@ -40,7 +40,7 @@ class BaseModel(ABC):
         self.loss_names = []
         self.model_names = []
         self.visual_names = []
-        self.optimizers = []
+        self.optimizers = nn.ModuleList()
         self.image_paths = []
         self.metric = 0  # used for learning rate policy 'plateau'
     
