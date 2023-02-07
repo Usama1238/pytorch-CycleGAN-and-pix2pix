@@ -5,27 +5,65 @@ from util.image_pool import ImagePool
 from .base_model import BaseModel
 from . import networks
 import torch.nn.functional as F
-from .patchnce import PatchNCELoss
+#from .patchnce import PatchNCELoss
 import util.util as util
 from torchsummary import summary
+from packaging import version
 
-def calculate_NCE_loss(self, src, tgt):
-        n_layers = len(self.nce_layers)
-        feat_q = self.netG_B(tgt, self.nce_layers, encode_only=True)
 
-        if self.opt.flip_equivariance and self.flipped_for_equivariance:
-            feat_q = [torch.flip(fq, [3]) for fq in feat_q]
+class PatchNCELoss(nn.Module):
+    def __init__(self, opt):
+        super().__init__()
+        self.opt = opt
+        self.cross_entropy_loss = torch.nn.CrossEntropyLoss(reduction='none')
+        self.mask_dtype = torch.uint8 if version.parse(torch.__version__) < version.parse('1.2.0') else torch.bool
 
-        feat_k = self.netG(src, self.nce_layers, encode_only=True)
-        feat_k_pool, sample_ids = self.netF(feat_k, self.opt.num_patches, None)
-        feat_q_pool, _ = self.netF(feat_q, self.opt.num_patches, sample_ids)
+    def forward(self, feat_q, feat_k):
+        num_patches = feat_q.shape[0]
+        dim = feat_q.shape[1]
+        feat_k = feat_k.detach()
 
-        total_nce_loss = 0.0
-        for f_q, f_k, crit, nce_layer in zip(feat_q_pool, feat_k_pool, self.criterionNCE, self.nce_layers):
-            loss = crit(f_q, f_k) * self.opt.lambda_NCE
-            total_nce_loss += loss.mean()
+        # pos logit
+        l_pos = torch.bmm(
+            feat_q.view(num_patches, 1, -1), feat_k.view(num_patches, -1, 1))
+        l_pos = l_pos.view(num_patches, 1)
 
-        return total_nce_loss / n_layers
+        # neg logit
+
+        # Should the negatives from the other samples of a minibatch be utilized?
+        # In CUT and FastCUT, we found that it's best to only include negatives
+        # from the same image. Therefore, we set
+        # --nce_includes_all_negatives_from_minibatch as False
+        # However, for single-image translation, the minibatch consists of
+        # crops from the "same" high-resolution image.
+        # Therefore, we will include the negatives from the entire minibatch.
+        if self.opt.nce_includes_all_negatives_from_minibatch:
+            # reshape features as if they are all negatives of minibatch of size 1.
+            batch_dim_for_bmm = 1
+        else:
+            batch_dim_for_bmm = self.opt.batch_size
+
+        # reshape features to batch size
+        feat_q = feat_q.view(batch_dim_for_bmm, -1, dim)
+        feat_k = feat_k.view(batch_dim_for_bmm, -1, dim)
+        npatches = feat_q.size(1)
+        l_neg_curbatch = torch.bmm(feat_q, feat_k.transpose(2, 1))
+
+        # diagonal entries are similarity between same features, and hence meaningless.
+        # just fill the diagonal with very small number, which is exp(-10) and almost zero
+        diagonal = torch.eye(npatches, device=feat_q.device, dtype=self.mask_dtype)[None, :, :]
+        l_neg_curbatch.masked_fill_(diagonal, -10.0)
+        l_neg = l_neg_curbatch.view(-1, npatches)
+
+        out = torch.cat((l_pos, l_neg), dim=1) / self.opt.nce_T
+
+        loss = self.cross_entropy_loss(out, torch.zeros(out.size(0), dtype=torch.long,
+                                                        device=feat_q.device))
+
+        return loss
+
+
+
 
 def define_F(input_nc, netF, norm='batch', use_dropout=False, init_type='normal', init_gain=0.02, no_antialias=False, gpu_ids=[], opt=None):
     if netF == 'global_pool':
@@ -359,5 +397,23 @@ class CycleGANModel(BaseModel):
         self.backward_D_A()      # calculate gradients for D_A
         self.backward_D_B()      # calculate graidents for D_B
         self.optimizer_D.step()  # update D_A and D_B's weights
+    
+   def calculate_NCE_loss(self, src, tgt):
+        n_layers = len(self.nce_layers)
+        feat_q = self.netG_B(tgt, self.nce_layers, encode_only=True)
+
+        if self.opt.flip_equivariance and self.flipped_for_equivariance:
+            feat_q = [torch.flip(fq, [3]) for fq in feat_q]
+
+        feat_k = self.netG(src, self.nce_layers, encode_only=True)
+        feat_k_pool, sample_ids = self.netF(feat_k, self.opt.num_patches, None)
+        feat_q_pool, _ = self.netF(feat_q, self.opt.num_patches, sample_ids)
+
+        total_nce_loss = 0.0
+        for f_q, f_k, crit, nce_layer in zip(feat_q_pool, feat_k_pool, self.criterionNCE, self.nce_layers):
+            loss = crit(f_q, f_k) * self.opt.lambda_NCE
+            total_nce_loss += loss.mean()
+
+        return total_nce_loss / n_layers
     
     
