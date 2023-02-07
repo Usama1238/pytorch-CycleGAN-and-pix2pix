@@ -164,7 +164,7 @@ class CycleGANModel(BaseModel):
         self.netG_B = networks.define_G(opt.output_nc, opt.input_nc, opt.ngf, opt.netG, opt.norm,
                                         not opt.no_dropout, opt.init_type, opt.init_gain, self.gpu_ids)
         summary(self.netG_B)
-        self.netF = networks.define_F(opt.input_nc, opt.netF, opt.norm,not opt.no_dropout, opt.init_type, opt.init_gain, self.gpu_ids,opt)
+        self.netF = define_F(opt.input_nc, opt.netF, opt.norm,not opt.no_dropout, opt.init_type, opt.init_gain, self.gpu_ids,opt)
         summary(self.netF)
 
         if self.isTrain:  # define discriminators
