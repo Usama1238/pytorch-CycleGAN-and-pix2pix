@@ -110,7 +110,7 @@ class PatchSampleF(nn.Module):
             mlp = nn.Sequential(*[nn.Linear(input_nc, self.nc), nn.ReLU(), nn.Linear(self.nc, self.nc)])
             if len(self.gpu_ids) > 0:
                 mlp.cuda()
-            setattr(self, 'mlp_%d' % mlp_id, mlp)
+           setattr(self, 'mlp_%d' % mlp_id, mlp)
         print(networks.init_net(self, self.init_type, self.init_gain, self.gpu_ids))
         self.mlp_init = True
 
