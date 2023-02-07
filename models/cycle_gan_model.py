@@ -9,6 +9,24 @@ from .patchnce import PatchNCELoss
 import util.util as util
 from torchsummary import summary
 
+def calculate_NCE_loss(self, src, tgt):
+        n_layers = len(self.nce_layers)
+        feat_q = self.netG_B(tgt, self.nce_layers, encode_only=True)
+
+        if self.opt.flip_equivariance and self.flipped_for_equivariance:
+            feat_q = [torch.flip(fq, [3]) for fq in feat_q]
+
+        feat_k = self.netG(src, self.nce_layers, encode_only=True)
+        feat_k_pool, sample_ids = self.netF(feat_k, self.opt.num_patches, None)
+        feat_q_pool, _ = self.netF(feat_q, self.opt.num_patches, sample_ids)
+
+        total_nce_loss = 0.0
+        for f_q, f_k, crit, nce_layer in zip(feat_q_pool, feat_k_pool, self.criterionNCE, self.nce_layers):
+            loss = crit(f_q, f_k) * self.opt.lambda_NCE
+            total_nce_loss += loss.mean()
+
+        return total_nce_loss / n_layers
+
 def define_F(input_nc, netF, norm='batch', use_dropout=False, init_type='normal', init_gain=0.02, no_antialias=False, gpu_ids=[], opt=None):
     if netF == 'global_pool':
         net = PoolingF()
@@ -320,23 +338,7 @@ class CycleGANModel(BaseModel):
         self.loss_G = self.loss_G_A + self.loss_G_B + self.loss_cycle_A + self.loss_cycle_B + self.loss_idt_A + self.loss_idt_B + loss_NCE_both
         self.loss_G.backward()
         
-    def calculate_NCE_loss(self, src, tgt):
-        n_layers = len(self.nce_layers)
-        feat_q = self.netG_B(tgt, self.nce_layers, encode_only=True)
-
-        if self.opt.flip_equivariance and self.flipped_for_equivariance:
-            feat_q = [torch.flip(fq, [3]) for fq in feat_q]
-
-        feat_k = self.netG(src, self.nce_layers, encode_only=True)
-        feat_k_pool, sample_ids = self.netF(feat_k, self.opt.num_patches, None)
-        feat_q_pool, _ = self.netF(feat_q, self.opt.num_patches, sample_ids)
-
-        total_nce_loss = 0.0
-        for f_q, f_k, crit, nce_layer in zip(feat_q_pool, feat_k_pool, self.criterionNCE, self.nce_layers):
-            loss = crit(f_q, f_k) * self.opt.lambda_NCE
-            total_nce_loss += loss.mean()
-
-        return total_nce_loss / n_layers    
+      
 
     def optimize_parameters(self):
         """Calculate losses, gradients, and update network weights; called in every training iteration"""
