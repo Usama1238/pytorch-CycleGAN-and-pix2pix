@@ -117,7 +117,9 @@ class PatchSampleF(nn.Module):
 
     def forward(self, feats, num_patches=64, patch_ids=None):
         return_ids = []
+        print(return_ids)
         return_feats = []
+        print(return_feats)
         if self.use_mlp and not self.mlp_init:
             self.create_mlp(feats)
         for feat_id, feat in enumerate(feats):
