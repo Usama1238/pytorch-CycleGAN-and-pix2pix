@@ -221,7 +221,7 @@ class CycleGANModel(BaseModel):
                                         not opt.no_dropout, opt.init_type, opt.init_gain, self.gpu_ids)
         #summary(self.netG_B)
         self.netF = define_F(opt.input_nc, opt.netF, opt.norm,not opt.no_dropout, opt.init_type, opt.init_gain, self.gpu_ids,opt)
-        summary(self.netF)
+        #summary(self.netF)
 
         if self.isTrain:  # define discriminators
             self.netD_A = networks.define_D(opt.output_nc, opt.ndf, opt.netD,
@@ -401,6 +401,7 @@ class CycleGANModel(BaseModel):
     def calculate_NCE_loss(self, src, tgt):
         n_layers = len(self.nce_layers)
         feat_q = self.netG_B(tgt, self.nce_layers, encode_only=True)
+        print(feat_q)
 
         if self.opt.flip_equivariance and self.flipped_for_equivariance:
             feat_q = [torch.flip(fq, [3]) for fq in feat_q]
