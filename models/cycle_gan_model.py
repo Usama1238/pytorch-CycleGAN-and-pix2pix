@@ -111,6 +111,28 @@ class CycleGANModel(BaseModel):
                 self.optimizers.append(self.optimizer_F)   
             self.optimizers.append(self.optimizer_G)
             self.optimizers.append(self.optimizer_D)
+     
+    def data_dependent_initialize(self, data):
+        """
+        The feature network netF is defined in terms of the shape of the intermediate, extracted
+        features of the encoder portion of netG. Because of this, the weights of netF are
+        initialized at the first feedforward pass with some input images.
+        Please also see PatchSampleF.create_mlp(), which is called at the first forward() call.
+        """
+        bs_per_gpu = data["A"].size(0) // max(len(self.opt.gpu_ids), 1)
+        self.set_input(data)
+        self.real_A = self.real_A[:bs_per_gpu]
+        self.real_B = self.real_B[:bs_per_gpu]
+        self.forward()                     # compute fake images: G(A)
+        if self.opt.isTrain:
+            self.backward_D_basic( netD, real, fake).backward()                  # calculate gradients for D
+            self.backward_G.backward()                   # calculate graidents for G
+            if self.opt.lambda_NCE > 0.0:
+                self.optimizer_F = torch.optim.Adam(self.netF.parameters(), lr=self.opt.lr, betas=(self.opt.beta1, 0.999))
+                self.optimizers.append(self.optimizer_F)   
+                
+
+    
 
     def set_input(self, input):
         """Unpack input data from the dataloader and perform necessary pre-processing steps.
@@ -164,26 +186,7 @@ class CycleGANModel(BaseModel):
         loss_D.backward()
         return loss_D
     
-    def data_dependent_initialize(self, data):
-        """
-        The feature network netF is defined in terms of the shape of the intermediate, extracted
-        features of the encoder portion of netG. Because of this, the weights of netF are
-        initialized at the first feedforward pass with some input images.
-        Please also see PatchSampleF.create_mlp(), which is called at the first forward() call.
-        """
-        bs_per_gpu = data["A"].size(0) // max(len(self.opt.gpu_ids), 1)
-        self.set_input(data)
-        self.real_A = self.real_A[:bs_per_gpu]
-        self.real_B = self.real_B[:bs_per_gpu]
-        self.forward()                     # compute fake images: G(A)
-        if self.opt.isTrain:
-            self.backward_D_basic( netD, real, fake).backward()                  # calculate gradients for D
-            self.backward_G.backward()                   # calculate graidents for G
-            if self.opt.lambda_NCE > 0.0:
-                self.optimizer_F = torch.optim.Adam(self.netF.parameters(), lr=self.opt.lr, betas=(self.opt.beta1, 0.999))
-                self.optimizers.append(self.optimizer_F)   
-                
-
+   
     def backward_D_A(self):
         """Calculate GAN loss for discriminator D_A"""
         fake_B = self.fake_B_pool.query(self.fake_B)
