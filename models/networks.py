@@ -5,6 +5,7 @@ import functools
 from torch.optim import lr_scheduler
 import torch.nn.functional as F
 from operator import length_hint
+import numpy as np
 
 ###############################################################################
 # Helper Functions
