@@ -143,7 +143,7 @@ class CycleGANModel(BaseModel):
                                         not opt.no_dropout, opt.init_type, opt.init_gain, self.gpu_ids)
         #summary(self.netG_B)
         self.netF =  networks.define_F(opt.input_nc,'mlp_sample', opt.norm,not opt.no_dropout, opt.init_type, opt.init_gain, self.gpu_ids,opt)
-        summary(self.netF)
+        #summary(self.netF)
 
         if self.isTrain:  # define discriminators
             self.netD_A = networks.define_D(opt.output_nc, opt.ndf, opt.netD,
@@ -191,8 +191,29 @@ class CycleGANModel(BaseModel):
             self.backward_G_B.backward()                   # calculate graidents for G
             if self.opt.lambda_NCE > 0.0:
                 self.optimizer_F = torch.optim.Adam(self.netF.parameters(), lr=self.opt.lr, betas=(self.opt.beta1, 0.999))
-                self.optimizers.append(self.optimizer_F)   
+                self.optimizers.append(self.optimizer_F) 
+    def optimize_parameters(self):
+      self.forward()      # compute fake images and reconstruction images.
+       # D_A and D_B
+      self.set_requires_grad([self.netD_A, self.netD_B], True)
+      self.optimizer_D.zero_grad()   # set D_A and D_B's gradients to zero
+      self.backward_D_A()      # calculate gradients for D_A
+      self.backward_D_B()      # calculate graidents for D_B
+      self.optimizer_D.step()  # update D_A and D_B's weights            
                 
+      """Calculate losses, gradients, and update network weights; called in every training iteration"""
+      # forward
+      
+      # G_A and G_B
+      self.set_requires_grad([self.netD_A, self.netD_B], False)  # Ds require no gradients when optimizing Gs
+      self.optimizer_G.zero_grad()  # set G_A and G_B's gradients to zero
+      if self.opt.netF == 'mlp_sample':
+          self.optimizer_F.zero_grad()  
+      self.backward_G()             # calculate gradients for G_A and G_B
+      self.optimizer_G.step()       # update G_A and G_B's weights
+      if self.opt.netF == 'mlp_sample':
+          self.optimizer_F.step()
+     
 
     
 
@@ -336,25 +357,7 @@ class CycleGANModel(BaseModel):
         
       
 
-    def optimize_parameters(self):
-        """Calculate losses, gradients, and update network weights; called in every training iteration"""
-        # forward
-        self.forward()      # compute fake images and reconstruction images.
-        # G_A and G_B
-        self.set_requires_grad([self.netD_A, self.netD_B], False)  # Ds require no gradients when optimizing Gs
-        self.optimizer_G.zero_grad()  # set G_A and G_B's gradients to zero
-        if self.opt.netF == 'mlp_sample':
-            self.optimizer_F.zero_grad()  
-        self.backward_G()             # calculate gradients for G_A and G_B
-        self.optimizer_G.step()       # update G_A and G_B's weights
-        if self.opt.netF == 'mlp_sample':
-            self.optimizer_F.step()
-        # D_A and D_B
-        self.set_requires_grad([self.netD_A, self.netD_B], True)
-        self.optimizer_D.zero_grad()   # set D_A and D_B's gradients to zero
-        self.backward_D_A()      # calculate gradients for D_A
-        self.backward_D_B()      # calculate graidents for D_B
-        self.optimizer_D.step()  # update D_A and D_B's weights
+  
     
     def calculate_NCE_loss(self, src, tgt):
         n_layers = len(self.nce_layers)
