@@ -547,8 +547,8 @@ class ResnetGenerator(nn.Module):
             return feat, feats  # return both output and intermediate features
         else:
             """Standard forward"""
-            fake = self.model(input)
-            return fake
+            return self.model(input)
+            
 
         
         #return self.model(input)
