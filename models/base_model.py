@@ -99,6 +99,9 @@ class BaseModel(ABC):
             load_suffix = 'iter_%d' % opt.load_iter if opt.load_iter > 0 else opt.epoch
             self.load_networks(load_suffix)
         self.print_networks(opt.verbose)
+        
+    def data_dependent_initialize(self, data):
+        pass    
 
     def eval(self):
         """Make models eval mode during test time"""
