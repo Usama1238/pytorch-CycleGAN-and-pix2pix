@@ -107,7 +107,7 @@ class PatchSampleF(nn.Module):
     def create_mlp(self, feats):
         for mlp_id, feat in enumerate(feats):
             input_nc = feat.shape[1]
-            mlp = nn.Sequential(*[nn.Linear(input_nc, self.nc), nn.ReLU(), nn.Linear(256, 256)])
+            mlp = nn.Sequential(*[nn.Linear(input_nc, self.nc), nn.ReLU(), nn.Linear(self.nc, self.nc)])
             print(mlp)
             if len(self.gpu_ids) > 0:
                 mlp.cuda()
@@ -439,17 +439,18 @@ class CycleGANModel(BaseModel):
     
     def calculate_NCE_loss(self, src, tgt):
         n_layers = len(self.nce_layers)
-        feat_q = self.netG_B(tgt, self.nce_layers, encode_only=True)
+        feat_q = self.netG_A(tgt, self.nce_layers, encode_only=True)
         print(feat_q)
 
         if self.opt.flip_equivariance and self.flipped_for_equivariance:
             feat_q = [torch.flip(fq, [3]) for fq in feat_q]
             
 
-        feat_k = self.netG_B(src, self.nce_layers, encode_only=True)
+        feat_k = self.netG_A(src, self.nce_layers, encode_only=True)
         print(feat_k)
         feat_k_pool, sample_ids = self.netF(feat_k, self.opt.num_patches, None)
         feat_q_pool, _ = self.netF(feat_q, self.opt.num_patches, sample_ids)
+        print(feat_q_pool)
 
         total_nce_loss = 0.0
         for f_q, f_k, crit, nce_layer in zip(feat_q_pool, feat_k_pool, self.criterionNCE, self.nce_layers):
