@@ -119,7 +119,7 @@ class CycleGANModel(BaseModel):
         initialized at the first feedforward pass with some input images.
         Please also see PatchSampleF.create_mlp(), which is called at the first forward() call.
         """
-        bs_per_gpu = data["B"].size(0) // max(len(self.opt.gpu_ids), 1)
+        bs_per_gpu = data["A"].size(0) // max(len(self.opt.gpu_ids), 1)
         self.set_input(data)
         self.real_A = self.real_A[:bs_per_gpu]
         self.real_B = self.real_B[:bs_per_gpu]
