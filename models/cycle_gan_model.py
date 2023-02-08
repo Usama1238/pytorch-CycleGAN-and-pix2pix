@@ -108,7 +108,7 @@ class PatchSampleF(nn.Module):
         for mlp_id, feat in enumerate(feats):
             input_nc = feat.shape[1]
             mlp = nn.Sequential(*[nn.Linear(input_nc, self.nc), nn.ReLU(), nn.Linear(self.nc, self.nc)])
-            print(mlp)
+            #print(mlp)
             if len(self.gpu_ids) > 0:
                 mlp.cuda()
             setattr(self, 'mlp_%d' % mlp_id, mlp)
@@ -222,7 +222,7 @@ class CycleGANModel(BaseModel):
                                         not opt.no_dropout, opt.init_type, opt.init_gain, self.gpu_ids)
         self.netG_B = networks.define_G(opt.output_nc, opt.input_nc, opt.ngf, opt.netG, opt.norm,
                                         not opt.no_dropout, opt.init_type, opt.init_gain, self.gpu_ids)
-        summary(self.netG_B)
+        #summary(self.netG_B)
         self.netF = define_F(opt.input_nc,'mlp_sample', opt.norm,not opt.no_dropout, opt.init_type, opt.init_gain, self.gpu_ids,opt)
         summary(self.netF)
 
@@ -261,7 +261,7 @@ class CycleGANModel(BaseModel):
         initialized at the first feedforward pass with some input images.
         Please also see PatchSampleF.create_mlp(), which is called at the first forward() call.
         """
-        bs_per_gpu = data["A"].size(0) // max(len(self.opt.gpu_ids), 1)
+        bs_per_gpu = data["B"].size(0) // max(len(self.opt.gpu_ids), 1)
         self.set_input(data)
         self.real_A = self.real_A[:bs_per_gpu]
         self.real_B = self.real_B[:bs_per_gpu]
