@@ -9,6 +9,7 @@ import torch.nn.functional as F
 import util.util as util
 from torchsummary import summary
 from packaging import version
+import numpy as np
 
 
 class PatchNCELoss(nn.Module):
@@ -27,6 +28,7 @@ class PatchNCELoss(nn.Module):
         l_pos = torch.bmm(
             feat_q.view(num_patches, 1, -1), feat_k.view(num_patches, -1, 1))
         l_pos = l_pos.view(num_patches, 1)
+        print(l_pos)
 
         # neg logit
 
@@ -54,6 +56,7 @@ class PatchNCELoss(nn.Module):
         diagonal = torch.eye(npatches, device=feat_q.device, dtype=self.mask_dtype)[None, :, :]
         l_neg_curbatch.masked_fill_(diagonal, -10.0)
         l_neg = l_neg_curbatch.view(-1, npatches)
+        print(l_neg)
 
         out = torch.cat((l_pos, l_neg), dim=1) / self.opt.nce_T
 
@@ -121,7 +124,7 @@ class PatchSampleF(nn.Module):
         return_feats = []
         print(return_feats)
         if self.use_mlp and not self.mlp_init:
-            self.create_mlp(feats)
+            print(self.create_mlp(feats))
         for feat_id, feat in enumerate(feats):
             B, H, W = feat.shape[0], feat.shape[2], feat.shape[3]
             feat_reshape = feat.permute(0, 2, 3, 1).flatten(1, 2)
