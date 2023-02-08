@@ -125,9 +125,9 @@ class CycleGANModel(BaseModel):
         self.real_B = self.real_B[:bs_per_gpu]
         self.forward()                     # compute fake images: G(A)
         if self.opt.isTrain:
-            self.backward_D_B.backward()                  # calculate gradients for D
-            self.backward_D_A.backward()    
-            self.backward_G_B.backward()                   # calculate graidents for G
+            #self.backward_D_B.backward()                  # calculate gradients for D
+            #self.backward_D_A.backward()    
+            #self.backward_G_B.backward()                   # calculate graidents for G
             if self.opt.lambda_NCE > 0.0:
                 self.optimizer_F = torch.optim.Adam(self.netF.parameters(), lr=self.opt.lr, betas=(self.opt.beta1, 0.999))
                 self.optimizers.append(self.optimizer_F) 
