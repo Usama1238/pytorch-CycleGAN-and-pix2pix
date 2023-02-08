@@ -46,7 +46,7 @@ def define_F(input_nc, netF, norm='batch', use_dropout=False, init_type='normal'
         net = StridedConvF(init_type=init_type, init_gain=init_gain, gpu_ids=gpu_ids)
     else:
         raise NotImplementedError('projection model name [%s] is not recognized' % netF)
-    return networks.init_net(net, init_type, init_gain, gpu_ids)
+    return init_net(net, init_type, init_gain, gpu_ids)
 
 class Normalize(nn.Module):
 
