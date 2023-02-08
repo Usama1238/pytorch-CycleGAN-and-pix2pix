@@ -291,10 +291,10 @@ class CycleGANModel(BaseModel):
 
     def forward(self):
         """Run forward pass; called by both functions <optimize_parameters> and <test>."""
-        self.fake_B = self.netG_A(self.real_A)  # G_A(A)
-        self.fake_B1 = torch.cat((self.fake_B, self.real_A), dim=0) if self.opt.nce_idt and self.opt.isTrain else self.real_A
-        self.rec_A = self.netG_B(self.fake_B1)   # G_B(G_A(A))
-        self.rec_A1 = self.rec_A[:self.fake_B.size(0)]
+        #self.fake_B = self.netG_A(self.real_A)  # G_A(A)
+        #self.fake_B1 = torch.cat((self.fake_B, self.real_A), dim=0) if self.opt.nce_idt and self.opt.isTrain else self.real_A
+        #self.rec_A = self.netG_B(self.fake_B1)   # G_B(G_A(A))
+        #self.rec_A1 = self.rec_A[:self.fake_B.size(0)]
         #self.fake_B = self.netG_A(self.real_A)  # G_A(A)
         #self.rec_A = self.netG_B(self.fake_B)   # G_B(G_A(A))
         #self.fake_A = self.netG_B(self.real_B)  # G_B(B)
@@ -305,21 +305,21 @@ class CycleGANModel(BaseModel):
         #self.rec_B = self.netG_A(self.fake_A1)   # G_A(G_B(B))
         #self.rec_B1 = self.rec_B[:self.real_B.size(0)]
         
-        #self.fake_B = self.netG_A(self.real_A)  # G_A(A)
-        #self.rec_A = self.netG_B(self.fake_B)   # G_B(G_A(A))
-        #self.fake_A = self.netG_B(self.real_B)  # G_B(B)
-        #self.rec_B = self.netG_A(self.fake_A) 
+        self.fake_B = self.netG_A(self.real_A)  # G_A(A)
+        self.rec_A = self.netG_B(self.fake_B)   # G_B(G_A(A))
+        self.fake_A = self.netG_B(self.real_B)  # G_B(B)
+        self.rec_B = self.netG_A(self.fake_A) 
         
-        self.real = torch.cat((self.real_A, self.real_B), dim=0) if self.opt.nce_idt and self.opt.isTrain else self.real_A
-        if self.opt.flip_equivariance:
-            self.flipped_for_equivariance = self.opt.isTrain and (np.random.random() < 0.5)
-            if self.flipped_for_equivariance:
-                self.real = torch.flip(self.real, [3])
+        #self.real = torch.cat((self.real_A, self.real_B), dim=0) if self.opt.nce_idt and self.opt.isTrain else self.real_A
+        #if self.opt.flip_equivariance:
+            #self.flipped_for_equivariance = self.opt.isTrain and (np.random.random() < 0.5)
+            #if self.flipped_for_equivariance:
+                #self.real = torch.flip(self.real, [3])
 
-        self.fake = self.netG_B(self.real)
-        self.fake_B = self.fake[:self.real_A.size(0)]
-        if self.opt.nce_idt:
-            self.idt_B = self.fake[self.real_A.size(0):]
+        #self.fake = self.netG_B(self.real)
+        #self.fake_B = self.fake[:self.real_A.size(0)]
+        #if self.opt.nce_idt:
+            #self.idt_B = self.fake[self.real_A.size(0):]
 
 
     def backward_D_basic(self, netD, real, fake):
