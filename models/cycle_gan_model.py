@@ -11,64 +11,6 @@ from torchsummary import summary
 from packaging import version
 import numpy as np
 
-""""
-class PatchNCELoss(nn.Module):
-    def __init__(self, opt):
-        super().__init__()
-        self.opt = opt
-        self.cross_entropy_loss = torch.nn.CrossEntropyLoss(reduction='none')
-        self.mask_dtype = torch.uint8 if version.parse(torch.__version__) < version.parse('1.2.0') else torch.bool
-
-    def forward(self, feat_q, feat_k):
-        num_patches = feat_q.shape[0]
-        dim = feat_q.shape[1]
-        feat_k = feat_k.detach()
-
-        # pos logit
-        l_pos = torch.bmm(
-            feat_q.view(num_patches, 1, -1), feat_k.view(num_patches, -1, 1))
-        l_pos = l_pos.view(num_patches, 1)
-        print(l_pos)
-
-        # neg logit
-
-        # Should the negatives from the other samples of a minibatch be utilized?
-        # In CUT and FastCUT, we found that it's best to only include negatives
-        # from the same image. Therefore, we set
-        # --nce_includes_all_negatives_from_minibatch as False
-        # However, for single-image translation, the minibatch consists of
-        # crops from the "same" high-resolution image.
-        # Therefore, we will include the negatives from the entire minibatch.
-        if self.opt.nce_includes_all_negatives_from_minibatch:
-            # reshape features as if they are all negatives of minibatch of size 1.
-            batch_dim_for_bmm = 1
-        else:
-            batch_dim_for_bmm = self.opt.batch_size
-
-        # reshape features to batch size
-        feat_q = feat_q.view(batch_dim_for_bmm, -1, dim)
-        feat_k = feat_k.view(batch_dim_for_bmm, -1, dim)
-        npatches = feat_q.size(1)
-        l_neg_curbatch = torch.bmm(feat_q, feat_k.transpose(2, 1))
-
-        # diagonal entries are similarity between same features, and hence meaningless.
-        # just fill the diagonal with very small number, which is exp(-10) and almost zero
-        diagonal = torch.eye(npatches, device=feat_q.device, dtype=self.mask_dtype)[None, :, :]
-        l_neg_curbatch.masked_fill_(diagonal, -10.0)
-        l_neg = l_neg_curbatch.view(-1, npatches)
-        print(l_neg)
-
-        out = torch.cat((l_pos, l_neg), dim=1) / self.opt.nce_T
-
-        loss = self.cross_entropy_loss(out, torch.zeros(out.size(0), dtype=torch.long,
-                                                        device=feat_q.device))
-
-        return loss
-
-"""
-
-
-
 
 class CycleGANModel(BaseModel):
     """
@@ -165,11 +107,8 @@ class CycleGANModel(BaseModel):
             self.criterionCycle = torch.nn.L1Loss()
             self.criterionIdt = torch.nn.L1Loss()
             # initialize optimizers; schedulers will be automatically created by function <BaseModel.setup>.
-            self.optimizer_G = print(torch.optim.Adam(itertools.chain(self.netG_A.parameters(), self.netG_B.parameters()), lr=opt.lr, betas=(opt.beta1, 0.999)))
+            self.optimizer_G = torch.optim.Adam(itertools.chain(self.netG_A.parameters(), self.netG_B.parameters()), lr=opt.lr, betas=(opt.beta1, 0.999))
             self.optimizer_D = torch.optim.Adam(itertools.chain(self.netD_A.parameters(), self.netD_B.parameters()), lr=opt.lr, betas=(opt.beta1, 0.999))
-            #if self.opt.lambda_NCE > 0.0:
-             #   self.optimizer_F = torch.optim.Adam(self.netF.parameters(), lr=self.opt.lr, betas=(self.opt.beta1, 0.999))
-             #   self.optimizers.append(self.optimizer_F)   
             self.optimizers.append(self.optimizer_G)
             self.optimizers.append(self.optimizer_D)
      
@@ -212,10 +151,7 @@ class CycleGANModel(BaseModel):
       self.backward_G()             # calculate gradients for G_A and G_B
       self.optimizer_G.step()       # update G_A and G_B's weights
       if self.opt.netF == 'mlp_sample':
-          self.optimizer_F.step()
-     
-
-    
+          self.optimizer_F.step()   
 
     def set_input(self, input):
         """Unpack input data from the dataloader and perform necessary pre-processing steps.
@@ -232,8 +168,7 @@ class CycleGANModel(BaseModel):
 
     def forward(self):
         """Run forward pass; called by both functions <optimize_parameters> and <test>."""
-        self.real = torch.cat((self.real_A, self.real_B), dim=0) if self.opt.nce_idt and self.opt.isTrain else self.real_A
-        
+        self.real = torch.cat((self.real_A, self.real_B), dim=0) if self.opt.nce_idt and self.opt.isTrain else self.real_A    
         self.fake_B = self.netG_A(self.real)
         self.rec_ = self.netG_B(self.fake_B)   # G_B(G_A(A))
         self.rec_A = self.rec_[:self.real_A.size(0)]
@@ -246,11 +181,7 @@ class CycleGANModel(BaseModel):
         
         
         
-        
-        
         #self.fake_B = self.fake[:self.real_A.size(0)]
-        
-        
         #self.fake_B = self.netG_A(self.real)  # G_A(A)
         #self.fake_B1 = torch.cat((self.fake_B, self.real_A), dim=0) if self.opt.nce_idt and self.opt.isTrain else self.real_A
         #self.rec_A = self.netG_B(self.fake_B1)   # G_B(G_A(A))
@@ -264,23 +195,6 @@ class CycleGANModel(BaseModel):
         #self.fake_A1 = torch.cat((self.fake_A, self.real_B), dim=0) if self.opt.nce_idt and self.opt.isTrain else self.real_A
         #self.rec_B = self.netG_A(self.fake_A1)   # G_A(G_B(B))
         #self.rec_B1 = self.rec_B[:self.real_B.size(0)]
-        
-        #self.fake_B = self.netG_A(self.real_A)  # G_A(A)
-        #self.rec_A = self.netG_B(self.fake_B)   # G_B(G_A(A))
-        #self.fake_A = self.netG_B(self.real_B)  # G_B(B)
-        #self.rec_B = self.netG_A(self.fake_A) 
-        
-        #self.real = torch.cat((self.real_A, self.real_B), dim=0) if self.opt.nce_idt and self.opt.isTrain else self.real_A
-        #if self.opt.flip_equivariance:
-            #self.flipped_for_equivariance = self.opt.isTrain and (np.random.random() < 0.5)
-            #if self.flipped_for_equivariance:
-                #self.real = torch.flip(self.real, [3])
-
-        #self.fake = self.netG_B(self.real)
-        #self.fake_B = self.fake[:self.real_A.size(0)]
-        #if self.opt.nce_idt:
-            #self.idt_B = self.fake[self.real_A.size(0):]
-
 
     def backward_D_basic(self, netD, real, fake):
         """Calculate GAN loss for the discriminator
@@ -354,31 +268,21 @@ class CycleGANModel(BaseModel):
         # combined loss and calculate gradients
         self.loss_G = self.loss_G_A + self.loss_G_B + self.loss_cycle_A + self.loss_cycle_B + self.loss_idt_A + self.loss_idt_B + loss_NCE_both
         self.loss_G.backward()
-        
-      
-
-  
-    
+          
     def calculate_NCE_loss(self, src, tgt):
         n_layers = len(self.nce_layers)
         feat_q = self.netG_B(tgt, self.nce_layers, encode_only=True)
-        print(feat_q)
-
         if self.opt.flip_equivariance and self.flipped_for_equivariance:
             feat_q = [torch.flip(fq, [3]) for fq in feat_q]
-            
-
         feat_k = self.netG_B(src, self.nce_layers, encode_only=True)
-        print(feat_k)
+        #print(feat_k)
         feat_k_pool, sample_ids = self.netF(feat_k, self.opt.num_patches, None)
         feat_q_pool, _ = self.netF(feat_q, self.opt.num_patches, sample_ids)
         print(feat_q_pool)
-
         total_nce_loss = 0.0
         for f_q, f_k, crit, nce_layer in zip(feat_q_pool, feat_k_pool, self.criterionNCE, self.nce_layers):
             loss = crit(f_q, f_k) * self.opt.lambda_NCE
             total_nce_loss += loss.mean()
-
         return total_nce_loss / n_layers
     
     
