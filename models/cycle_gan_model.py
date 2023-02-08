@@ -104,7 +104,7 @@ class CycleGANModel(BaseModel):
             #self.optimizers = nn.ParameterList()
             for nce_layer in self.opt.nce_layers:
                 self.criterionNCE.append(PatchNCELoss(opt).to(self.device))
-            self.criterionCycle = torch.nn.L1Loss()
+            self.criterionCycle = torch.nn.L1Loss().to(self.device)
             self.criterionIdt = torch.nn.L1Loss()
             # initialize optimizers; schedulers will be automatically created by function <BaseModel.setup>.
             self.optimizer_G = torch.optim.Adam(itertools.chain(self.netG_A.parameters(), self.netG_B.parameters()), lr=opt.lr, betas=(opt.beta1, 0.999))
