@@ -11,6 +11,16 @@ import numpy as np
 # Helper Functions
 ###############################################################################
 
+def get_pad_layer(pad_type):
+    if(pad_type in ['refl', 'reflect']):
+        PadLayer = nn.ReflectionPad2d
+    elif(pad_type in ['repl', 'replicate']):
+        PadLayer = nn.ReplicationPad2d
+    elif(pad_type == 'zero'):
+        PadLayer = nn.ZeroPad2d
+    else:
+        print('Pad type [%s] not recognized' % pad_type)
+    return PadLayer
 
 
 class Identity(nn.Module):
