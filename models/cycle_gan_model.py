@@ -267,8 +267,8 @@ class CycleGANModel(BaseModel):
         self.real_B = self.real_B[:bs_per_gpu]
         self.forward()                     # compute fake images: G(A)
         if self.opt.isTrain:
-            self.backward_D_basic( netD, real, fake).backward()                  # calculate gradients for D
-            self.backward_G.backward()                   # calculate graidents for G
+            self.backward_D_B.backward()                  # calculate gradients for D
+            self.backward_G_B.backward()                   # calculate graidents for G
             if self.opt.lambda_NCE > 0.0:
                 self.optimizer_F = torch.optim.Adam(self.netF.parameters(), lr=self.opt.lr, betas=(self.opt.beta1, 0.999))
                 self.optimizers.append(self.optimizer_F)   
@@ -300,10 +300,10 @@ class CycleGANModel(BaseModel):
         #self.fake_A = self.netG_B(self.real_B)  # G_B(B)
         #self.rec_B = self.netG_A(self.fake_A)   # G_A(G_B(B))
         
-        self.fake_A = self.netG_B(self.real_B)  # G_B(B)
-        self.fake_A1 = torch.cat((self.fake_A, self.real_B), dim=0) if self.opt.nce_idt and self.opt.isTrain else self.real_A
-        self.rec_B = self.netG_A(self.fake_A1)   # G_A(G_B(B))
-        self.rec_B1 = self.rec_B[:self.real_B.size(0)]
+        #self.fake_A = self.netG_B(self.real_B)  # G_B(B)
+        #self.fake_A1 = torch.cat((self.fake_A, self.real_B), dim=0) if self.opt.nce_idt and self.opt.isTrain else self.real_A
+        #self.rec_B = self.netG_A(self.fake_A1)   # G_A(G_B(B))
+        #self.rec_B1 = self.rec_B[:self.real_B.size(0)]
 
 
     def backward_D_basic(self, netD, real, fake):
