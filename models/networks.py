@@ -12,9 +12,31 @@ import numpy as np
 ###############################################################################
 
 
+
 class Identity(nn.Module):
     def forward(self, x):
         return x
+    
+def get_filter(filt_size=3):
+    if(filt_size == 1):
+        a = np.array([1., ])
+    elif(filt_size == 2):
+        a = np.array([1., 1.])
+    elif(filt_size == 3):
+        a = np.array([1., 2., 1.])
+    elif(filt_size == 4):
+        a = np.array([1., 3., 3., 1.])
+    elif(filt_size == 5):
+        a = np.array([1., 4., 6., 4., 1.])
+    elif(filt_size == 6):
+        a = np.array([1., 5., 10., 10., 5., 1.])
+    elif(filt_size == 7):
+        a = np.array([1., 6., 15., 20., 15., 6., 1.])
+
+    filt = torch.Tensor(a[:, None] * a[None, :])
+    filt = filt / torch.sum(filt)
+
+    return filt    
     
 
 class Downsample(nn.Module):
