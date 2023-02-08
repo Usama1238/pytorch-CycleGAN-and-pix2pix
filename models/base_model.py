@@ -6,6 +6,8 @@ from abc import ABC, abstractmethod
 from . import networks
 
 
+
+
 class BaseModel(ABC):
     """This class is an abstract base class (ABC) for models.
     To create a subclass, you need to implement the following five functions:
@@ -103,14 +105,18 @@ class BaseModel(ABC):
             load_suffix = 'iter_%d' % opt.load_iter if opt.load_iter > 0 else opt.epoch
             self.load_networks(load_suffix)
         self.print_networks(opt.verbose)
-        
+    
+    def parallelize(self):
+      for name in self.model_names:
+          if isinstance(name, str):
+              net = getattr(self, 'net' + name)
+              setattr(self, 'net' + name, torch.nn.DataParallel(net, self.opt.gpu_ids))
+    
+    
     def data_dependent_initialize(self, data):
         pass 
-    def parallelize(self):
-       for name in self.model_names:
-           if isinstance(name, str):
-               net = getattr(self, 'net' + name)
-               setattr(self, 'net' + name, torch.nn.DataParallel(net, self.opt.gpu_ids))
+    
+ 
     
     
         
