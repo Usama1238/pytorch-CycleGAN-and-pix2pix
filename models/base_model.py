@@ -70,10 +70,6 @@ class BaseModel(ABC):
 
     @abstractmethod
     
-    def data_dependent_initialize(self, data):
-        pass    
-
-    
     def set_input(self, input):
         """Unpack input data from the dataloader and perform necessary pre-processing steps.
 
@@ -92,11 +88,7 @@ class BaseModel(ABC):
         """Calculate losses, gradients, and update network weights; called in every training iteration"""
         pass
     
-    def parallelize(self):
-        for name in self.model_names:
-            if isinstance(name, str):
-                net = getattr(self, 'net' + name)
-                setattr(self, 'net' + name, torch.nn.DataParallel(net, self.opt.gpu_ids))
+   
 
 
     def setup(self, opt):
@@ -111,6 +103,16 @@ class BaseModel(ABC):
             load_suffix = 'iter_%d' % opt.load_iter if opt.load_iter > 0 else opt.epoch
             self.load_networks(load_suffix)
         self.print_networks(opt.verbose)
+        
+    def data_dependent_initialize(self, data):
+        pass 
+    def parallelize(self):
+       for name in self.model_names:
+           if isinstance(name, str):
+               net = getattr(self, 'net' + name)
+               setattr(self, 'net' + name, torch.nn.DataParallel(net, self.opt.gpu_ids))
+    
+    
         
   
     def eval(self):
