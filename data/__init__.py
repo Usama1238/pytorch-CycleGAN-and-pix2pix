@@ -77,6 +77,9 @@ class CustomDatasetDataLoader():
             batch_size=opt.batch_size,
             shuffle=not opt.serial_batches,
             num_workers=int(opt.num_threads))
+        
+    def set_epoch(self, epoch):
+        self.dataset.current_epoch = epoch    
 
     def load_data(self):
         return self
