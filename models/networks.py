@@ -190,6 +190,7 @@ class PatchSampleF(nn.Module):
                 patch_id = []
             if self.use_mlp:
                 mlp = getattr(self, 'mlp_%d' % feat_id)
+                print(mlp)
                 x_sample = mlp(x_sample)
             return_ids.append(patch_id)
             x_sample = self.l2norm(x_sample)
