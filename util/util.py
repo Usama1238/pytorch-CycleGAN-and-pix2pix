@@ -9,6 +9,31 @@ import argparse
 from argparse import Namespace
 import torchvision
 
+
+def correct_resize_label(t, size):
+    device = t.device
+    t = t.detach().cpu()
+    resized = []
+    for i in range(t.size(0)):
+        one_t = t[i, :1]
+        one_np = np.transpose(one_t.numpy().astype(np.uint8), (1, 2, 0))
+        one_np = one_np[:, :, 0]
+        one_image = Image.fromarray(one_np).resize(size, Image.NEAREST)
+        resized_t = torch.from_numpy(np.array(one_image)).long()
+        resized.append(resized_t)
+    return torch.stack(resized, dim=0).to(device)
+
+def correct_resize(t, size, mode=Image.BICUBIC):
+    device = t.device
+    t = t.detach().cpu()
+    resized = []
+    for i in range(t.size(0)):
+        one_t = t[i:i + 1]
+        one_image = Image.fromarray(tensor2im(one_t)).resize(size, Image.BICUBIC)
+        resized_t = torchvision.transforms.functional.to_tensor(one_image) * 2 - 1.0
+        resized.append(resized_t)
+    return torch.stack(resized, dim=0).to(device)
+
 def copyconf(default_opt, **kwargs):
     conf = Namespace(**vars(default_opt))
     for key in kwargs:
