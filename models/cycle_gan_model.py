@@ -283,12 +283,12 @@ class CycleGANModel(BaseModel):
         self.loss_G = self.loss_G_A + self.loss_G_B + self.loss_cycle_A + self.loss_cycle_B + self.loss_idt_A + self.loss_idt_B + loss_NCE_both
         self.loss_G.backward()
           
-    def calculate_NCE_loss(self, self.fake_B, self.rec_A1):
+    def calculate_NCE_loss(self, fake_B, rec_A1):
         n_layers = len(self.nce_layers)
-        feat_q = self.netG_B(self.rec_A1, self.nce_layers, encode_only=True)
+        feat_q = self.netG_B(rec_A1, self.nce_layers, encode_only=True)
         #if self.opt.flip_equivariance and self.flipped_for_equivariance:
             #feat_q = [torch.flip(fq, [3]) for fq in feat_q]
-        feat_k = self.netG_B(self.fake_B, self.nce_layers, encode_only=True)
+        feat_k = self.netG_B(fake_B, self.nce_layers, encode_only=True)
         #print(feat_k)
         feat_k_pool, sample_ids = self.netF(feat_k, self.opt.num_patches, None)
         feat_q_pool, _ = self.netF(feat_q, self.opt.num_patches, sample_ids)
