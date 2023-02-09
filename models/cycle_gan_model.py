@@ -205,10 +205,10 @@ class CycleGANModel(BaseModel):
         #self.fake_A = self.netG_B(self.real_B)  # G_B(B)
         #self.rec_B = self.netG_A(self.fake_A)   # G_A(G_B(B))
         
-        #self.fake_A = self.netG_B(self.real_B)  # G_B(B)
-        #self.fake_A1 = torch.cat((self.fake_A, self.real_B), dim=0) if self.opt.nce_idt and self.opt.isTrain else self.real_A
-        #self.rec_B = self.netG_A(self.fake_A1)   # G_A(G_B(B))
-        #self.rec_B1 = self.rec_B[:self.real_B.size(0)]
+        self.fake_A = self.netG_B(self.real_B)  # G_B(B)
+        self.fake_A1 = torch.cat((self.fake_A, self.real_B), dim=0) if self.opt.nce_idt and self.opt.isTrain else self.real_B
+        self.rec_B = self.netG_A(self.fake_A1)   # G_A(G_B(B))
+        self.rec_B1 = self.rec_B[:self.real_B.size(0)]
 
     def backward_D_basic(self, netD, real, fake):
         """Calculate GAN loss for the discriminator
