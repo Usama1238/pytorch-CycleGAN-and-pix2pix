@@ -9,6 +9,12 @@ import argparse
 from argparse import Namespace
 import torchvision
 
+def copyconf(default_opt, **kwargs):
+    conf = Namespace(**vars(default_opt))
+    for key in kwargs:
+        setattr(conf, key, kwargs[key])
+    return conf
+
 
 def str2bool(v):
     if isinstance(v, bool):
