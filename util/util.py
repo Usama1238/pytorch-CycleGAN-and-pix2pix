@@ -15,6 +15,18 @@ def copyconf(default_opt, **kwargs):
         setattr(conf, key, kwargs[key])
     return conf
 
+def find_class_in_module(target_cls_name, module):
+    target_cls_name = target_cls_name.replace('_', '').lower()
+    clslib = importlib.import_module(module)
+    cls = None
+    for name, clsobj in clslib.__dict__.items():
+        if name.lower() == target_cls_name:
+            cls = clsobj
+
+    assert cls is not None, "In %s, there should be a class whose name matches %s in lowercase without underscore(_)" % (module, target_cls_name)
+
+    return cls
+
 
 def str2bool(v):
     if isinstance(v, bool):
