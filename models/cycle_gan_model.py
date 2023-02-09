@@ -263,12 +263,12 @@ class CycleGANModel(BaseModel):
         # GAN loss D_A(G_A(A))
         self.loss_G_A = self.criterionGAN(self.netD_A(self.fake_B), True)
         if self.opt.lambda_NCE > 0.0:
-            self.loss_NCE = self.calculate_NCE_loss(self.fake_B,self.rec_A1)
+            self.loss_NCE = self.calculate_NCE_loss(self.fake_B,self.rec_A1).to(self.device)
         else:
             self.loss_NCE, self.loss_NCE_bd = 0.0, 0.0
             
         if self.opt.nce_idt and self.opt.lambda_NCE > 0.0:
-            self.loss_NCE_Y = self.calculate_NCE_loss(self.real_A, self.idt_A)
+            self.loss_NCE_Y = self.calculate_NCE_loss(self.real_A, self.idt_A).to(self.device)
             loss_NCE_both = (self.loss_NCE + self.loss_NCE_Y) * 0.5
         else:
             loss_NCE_both = self.loss_NCE
