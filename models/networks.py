@@ -160,7 +160,7 @@ class PatchSampleF(nn.Module):
             mlp = nn.Sequential(*[nn.Linear(input_nc, self.nc), nn.ReLU(), nn.Linear(self.nc, self.nc)])
             #print(mlp)
             if length_hint(self.gpu_ids) > 0:
-                mlp.cuda()
+                mlp.to(self.device)
             setattr(self, 'mlp_%d' % mlp_id, mlp)
         init_net(self, self.init_type, self.init_gain, self.gpu_ids)
         self.mlp_init = True
@@ -191,7 +191,7 @@ class PatchSampleF(nn.Module):
             if self.use_mlp:
                 mlp = getattr(self, 'mlp_%d' % feat_id)
                 print(mlp)
-                x_sample = mlp(x_sample.to(self.device))
+                x_sample = mlp(x_sample)
             return_ids.append(patch_id)
             x_sample = self.l2norm(x_sample)
 
