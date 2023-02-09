@@ -62,7 +62,7 @@ class BaseOptions():
         parser.add_argument('--nce_T', type=float, default=0.07, help='temperature for NCE loss')
         parser.add_argument('--num_patches', type=int, default=256, help='number of patches per layer')
         parser.add_argument('--nce_layers', type=str, default='0,4,8,12,16', help='compute NCE loss on which layers')   
-        parser.add_argument('--nce_idt',nargs='?', const=True, default=False, help='use NCE loss for identity mapping: NCE(G(Y), Y))')
+        #parser.add_argument('--nce_idt',nargs='?', const=True, default=False, help='use NCE loss for identity mapping: NCE(G(Y), Y))')
         self.initialized = True
         return parser
 
